@@ -14,6 +14,12 @@ namespace SongPlayHistory
         public int RawScore = 0;
         public int LastNote = 0;
         public int Param = 0;
+        public int GoodCuts = -1;
+        public int BadCuts = -1;
+        public int Missed = -1;
+        public int MaxCombo = -1;
+        public float Energy = -1;
+        public PracticeParams PracticeMode = null;
     }
 
     [Flags]
@@ -33,7 +39,13 @@ namespace SongPlayHistory
         NoArrows = 0x0400,
         GhostNotes = 0x0800,
         SubmissionDisabled = 0x10000,
-        Multiplayer = 0x20000,
+        Multiplayer = 0x20000
+    }
+
+    internal class PracticeParams
+    {
+        public float Start;
+        public float Speed;
     }
 
     internal class UserVote
@@ -44,7 +56,7 @@ namespace SongPlayHistory
 
     internal static class SPHModel
     {
-        public static readonly string DataFile = Path.Combine(Environment.CurrentDirectory, "UserData", "SongPlayData.json");
+        public static readonly string DataFile = Path.Combine(Environment.CurrentDirectory, "UserData", "SongPlayDataPlus.json");
         public static readonly string VoteFile = Path.Combine(Environment.CurrentDirectory, "UserData", "votedSongs.json");
 
         public static Dictionary<string, IList<Record>> Records { get; set; } = new Dictionary<string, IList<Record>>();
@@ -69,7 +81,7 @@ namespace SongPlayHistory
             return new List<Record>();
         }
 
-        public static void SaveRecord(IDifficultyBeatmap beatmap, LevelCompletionResults result, bool submissionDisabled, bool isMultiplayer)
+        public static void SaveRecord(IDifficultyBeatmap beatmap, LevelCompletionResults result, PracticeParams practiceMode, bool submissionDisabled, bool isMultiplayer)
         {
             if (beatmap == null || result == null)
             {
@@ -84,6 +96,12 @@ namespace SongPlayHistory
 
             // We now keep failed records.
             var cleared = result.levelEndStateType == LevelCompletionResults.LevelEndStateType.Cleared;
+
+            // Incomplete Practice Run
+            if (practiceMode != null && (practiceMode.Start > 0 || !cleared))
+            {
+                return;
+            }
 
             static Param ModsToParam(GameplayModifiers mods)
             {
@@ -111,10 +129,16 @@ namespace SongPlayHistory
             var record = new Record
             {
                 Date = DateTimeOffset.Now.ToUnixTimeMilliseconds(),
-                ModifiedScore = result.modifiedScore,
+                ModifiedScore = practiceMode == null ? result.modifiedScore : -1,
                 RawScore = result.rawScore,
                 LastNote = cleared ? -1 : result.goodCutsCount + result.badCutsCount + result.missedCount,
-                Param = (int)param
+                Param = (int)param,
+                GoodCuts = result.goodCutsCount,
+                BadCuts = result.badCutsCount,
+                Missed = result.missedCount,
+                MaxCombo = result.maxCombo,
+                Energy = result.energy,
+                PracticeMode = practiceMode
             };
 
             var beatmapCharacteristicName = beatmap.parentDifficultyBeatmapSet.beatmapCharacteristic.serializedName;

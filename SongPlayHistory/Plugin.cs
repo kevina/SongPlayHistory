@@ -20,7 +20,7 @@ namespace SongPlayHistory
         public static Logger Log { get; internal set; }
 
         private readonly Harmony _harmony;
-        private bool _isPractice;
+        private PracticeParams _practice;
 
         [Init]
         public Plugin(Logger logger, Config config)
@@ -31,7 +31,7 @@ namespace SongPlayHistory
 
             PluginConfig.Instance = config.Generated<PluginConfig>();
             BSMLSettings.instance.AddSettingsMenu("Song Play History", $"SongPlayHistory.Settings.bsml", SettingsController.instance);
-
+ 
             SPHModel.InitializeRecords();
         }
 
@@ -65,12 +65,23 @@ namespace SongPlayHistory
         private void OnGameSceneLoaded()
         {
             var practiceSettings = BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData?.practiceSettings;
-            _isPractice = practiceSettings != null;
+            if (practiceSettings != null)
+            {
+                _practice = new PracticeParams
+                {
+                    Start = practiceSettings.startSongTime,
+                    Speed = practiceSettings.songSpeedMul
+                };   
+            } 
+            else 
+            {
+                _practice = null;
+            }
         }
 
         private void OnLevelFinished(StandardLevelScenesTransitionSetupDataSO scene, LevelCompletionResults result)
         {
-            if (_isPractice || Gamemode.IsPartyActive)
+            if (Gamemode.IsPartyActive)
             {
                 return;
             }
@@ -88,7 +99,7 @@ namespace SongPlayHistory
             {
                 // Actually there's no way to know if any custom modifier was applied if the user failed a map.
                 var submissionDisabled = ScoreSubmission.WasDisabled || ScoreSubmission.Disabled || ScoreSubmission.ProlongedDisabled;
-                SPHModel.SaveRecord(beatmap, result, submissionDisabled, isMultiplayer);
+                SPHModel.SaveRecord(beatmap, result, _practice, submissionDisabled, isMultiplayer);
             }
         }
 

@@ -1,4 +1,12 @@
-﻿# SongPlayHistory
+﻿# SongPlayHistoryPlus
+
+Personal fork of SongPlayHistory to record some additonal stats and completed practice runs.
+
+Data is now stored in `SongPlayDataPlus.json`.  If you want to import your data from SongPlayHistory simply rename `SongPlayData.json` to `SongPlayDataPlus.json`.
+
+_kevina_
+
+# SongPlayHistory
 
 [![release](https://img.shields.io/github/release/swift-kim/SongPlayHistory.svg)](https://github.com/swift-kim/SongPlayHistory/releases)
 
